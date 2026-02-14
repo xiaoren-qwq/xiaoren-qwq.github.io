@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>战术撤离</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+        .header {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+        .header h1 { color: white; font-size: 24px; }
+        .game-info { color: white; font-size: 14px; }
+        .game-container {
+            position: relative;
+            margin-top: 20px;
+        }
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            color: white;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .btn-start { background: linear-gradient(45deg, #43e97b, #38f9d7); color: white; }
+        .btn-back { background: linear-gradient(45deg, #f093fb, #f5576c); color: white; }
+        .btn:hover { transform: scale(1.05); }
+        .instructions {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚁 战术撤离</h1>
+        <div class="game-info">
+            任务进度: <span id="progress">0</span>% | 生命: <span id="lives">3</span>
+        </div>
+        <button class="btn btn-back" onclick="location.href='../index.html'">返回</button>
+    </div>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas" width="600" height="500"></canvas>
+    </div>
+    
+    <div class="controls">
+        <button class="btn btn-start" id="startBtn" onclick="startGame()">开始游戏</button>
+        <div class="instructions">
+            使用 WASD 或方向键移动 | 收集物资 | 到达撤离点 | 躲避敌人
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameRunning = false;
+        let progress = 0;
+        let lives = 3;
+        let itemsCollected = 0;
+        const totalItems = 10;
+        
+        const player = {
+            x: 50,
+            y: 250,
+            size: 30,
+            speed: 5,
+            color: '#4facfe'
+        };
+        
+        const safeZone = {
+            x: 520,
+            y: 200,
+            width: 60,
+            height: 100,
+            color: '#43e97b'
+        };
+        
+        let items = [];
+        let enemies = [];
+        let bullets = [];
+        
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        function initItems() {
+            items = [];
+            for (let i = 0; i < totalItems; i++) {
+                items.push({
+                    x: 80 + Math.random() * 420,
+                    y: 50 + Math.random() * 400,
+                    size: 15,
+                    collected: false,
+                    type: ['💊', '🎒', '📦', '🔫'][Math.floor(Math.random() * 4)]
+                });
+            }
+        }
+        
+        function initEnemies() {
+            enemies = [];
+            for (let i = 0; i < 3; i++) {
+                enemies.push({
+                    x: 200 + Math.random() * 200,
+                    y: 100 + Math.random() * 300,
+                    size: 25,
+                    speed: 2,
+                    color: '#ff6b6b',
+                    direction: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        function update() {
+            if (!gameRunning) return;
+            
+            // 移动玩家
+            if ((keys['ArrowUp'] || keys['w'] || keys['W']) && player.y > 0) {
+                player.y -= player.speed;
+            }
+            if ((keys['ArrowDown'] || keys['s'] || keys['S']) && player.y < canvas.height - player.size) {
+                player.y += player.speed;
+            }
+            if ((keys['ArrowLeft'] || keys['a'] || keys['A']) && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if ((keys['ArrowRight'] || keys['d'] || keys['D']) && player.x < canvas.width - player.size) {
+                player.x += player.speed;
+            }
+            
+            // 检查收集物品
+            items.forEach(item => {
+                if (!item.collected && checkCollision(player, item)) {
+                    item.collected = true;
+                    itemsCollected++;
+                    progress = Math.floor((itemsCollected / totalItems) * 100);
+                    updateUI();
+                }
+            });
+            
+            // 检查是否到达安全区
+            if (progress >= 100 && checkCollision(player, safeZone)) {
+                gameWin();
+                return;
+            }
+            
+            // 更新敌人
+            enemies.forEach(enemy => {
+                enemy.x += Math.cos(enemy.direction) * enemy.speed;
+                enemy.y += Math.sin(enemy.direction) * enemy.speed;
+                
+                // 边界反弹
+                if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.size) {
+                    enemy.direction = Math.PI - enemy.direction;
+                }
+                if (enemy.y <= 0 || enemy.y >= canvas.height - enemy.size) {
+                    enemy.direction = -enemy.direction;
+                }
+                
+                // 追踪玩家
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 150) {
+                    enemy.direction = Math.atan2(dy, dx);
+                }
+                
+                // 碰撞检测
+                if (checkCollision(player, enemy)) {
+                    lives--;
+                    updateUI();
+                    player.x = 50;
+                    player.y = 250;
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+        }
+        
+        function checkCollision(a, b) {
+            return a.x < b.x + (b.width || b.size) &&
+                   a.x + (a.size || a.width) > b.x &&
+                   a.y < b.y + (b.height || b.size) &&
+                   a.y + a.size > b.y;
+        }
+        
+        function draw() {
+            // 清空画布
+            ctx.fillStyle = '#1a3a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            
+            // 绘制安全区
+            ctx.fillStyle = safeZone.color;
+            ctx.fillRect(safeZone.x, safeZone.y, safeZone.width, safeZone.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('撤离点', safeZone.x + safeZone.width / 2, safeZone.y + safeZone.height / 2);
+            
+            // 绘制物品
+            items.forEach(item => {
+                if (!item.collected) {
+                    ctx.font = '20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(item.type, item.x + item.size / 2, item.y + item.size / 2 + 7);
+                    
+                    // 物品光圈
+                    ctx.beginPath();
+                    ctx.arc(item.x + item.size / 2, item.y + item.size / 2, item.size + Math.sin(Date.now() * 0.005) * 3, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+                    ctx.stroke();
+                }
+            });
+            
+            // 绘制敌人
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.beginPath();
+                ctx.arc(enemy.x + enemy.size / 2, enemy.y + enemy.size / 2, enemy.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 敌人眼睛
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(enemy.x + enemy.size / 2 - 5, enemy.y + enemy.size / 2 - 3, 4, 0, Math.PI * 2);
+                ctx.arc(enemy.x + enemy.size / 2 + 5, enemy.y + enemy.size / 2 - 3, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // 绘制玩家
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+            
+            // 玩家标记
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('我', player.x + player.size / 2, player.y + player.size / 2 + 5);
+            
+            // 进度指示器
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(10, 10, 200, 25);
+            ctx.fillStyle = progress >= 100 ? '#43e97b' : '#667eea';
+            ctx.fillRect(10, 10, progress * 2, 25);
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`任务进度: ${progress}%`, 15, 28);
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        function startGame() {
+            if (gameRunning) return;
+            
+            gameRunning = true;
+            progress = 0;
+            lives = 3;
+            itemsCollected = 0;
+            player.x = 50;
+            player.y = 250;
+            
+            initItems();
+            initEnemies();
+            updateUI();
+            
+            document.getElementById('startBtn').textContent = '游戏中...';
+            gameLoop();
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('任务失败！', canvas.width / 2, canvas.height / 2 - 20);
+            ctx.font = '20px Microsoft YaHei';
+            ctx.fillText('你被敌人抓住了', canvas.width / 2, canvas.height / 2 + 20);
+            document.getElementById('startBtn').textContent = '重新开始';
+        }
+        
+        function gameWin() {
+            gameRunning = false;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#43e97b';
+            ctx.font = '30px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('🎉 撤离成功！', canvas.width / 2, canvas.height / 2 - 20);
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Microsoft YaHei';
+            ctx.fillText('你成功完成了撤离任务', canvas.width / 2, canvas.height / 2 + 20);
+            document.getElementById('startBtn').textContent = '重新开始';
+        }
+        
+        function updateUI() {
+            document.getElementById('progress').textContent = progress;
+            document.getElementById('lives').textContent = lives;
+        }
+        
+        // 初始绘制
+        draw();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '24px Microsoft YaHei';
+        ctx.textAlign = 'center';
+        ctx.fillText('点击"开始游戏"按钮开始', canvas.width / 2, canvas.height / 2);
+    </script>
+</body>
+</html>

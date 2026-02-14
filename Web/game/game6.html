@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你画我猜</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+        .header {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+        .header h1 { color: white; font-size: 24px; }
+        .game-info { color: white; font-size: 14px; }
+        .game-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .drawing-area {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+        }
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            cursor: crosshair;
+        }
+        .side-panel {
+            color: white;
+            min-width: 250px;
+        }
+        .info-box {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .word-display {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            color: #feca57;
+            margin-bottom: 15px;
+        }
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .color-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .color-btn:hover, .color-btn.active {
+            transform: scale(1.2);
+            border-color: #667eea;
+        }
+        .brush-size {
+            margin-top: 15px;
+        }
+        .brush-size input {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .answer-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            color: white;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .btn-start { background: linear-gradient(45deg, #43e97b, #38f9d7); color: white; }
+        .btn-back { background: linear-gradient(45deg, #f093fb, #f5576c); color: white; }
+        .btn-clear { background: linear-gradient(45deg, #feca57, #ff9f43); color: white; }
+        .btn:hover { transform: scale(1.05); }
+        .message {
+            color: #feca57;
+            font-size: 16px;
+            margin-top: 10px;
+            min-height: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 你画我猜</h1>
+        <div class="game-info">
+            得分: <span id="score">0</span> | 轮次: <span id="round">1</span>
+        </div>
+        <button class="btn btn-back" onclick="location.href='../index.html'">返回</button>
+    </div>
+    
+    <div class="game-container">
+        <div class="drawing-area">
+            <canvas id="drawCanvas" width="500" height="400"></canvas>
+        </div>
+        
+        <div class="side-panel">
+            <div class="info-box">
+                <h3>要画的词</h3>
+                <div class="word-display" id="currentWord">???</div>
+                <input type="text" class="answer-input" id="answerInput" placeholder="输入你的答案..." onkeypress="if(event.key==='Enter')checkAnswer()">
+            </div>
+            
+            <div class="info-box">
+                <h3>颜色</h3>
+                <div class="color-picker">
+                    <div class="color-btn active" style="background: #000000;" onclick="setColor('#000000', this)"></div>
+                    <div class="color-btn" style="background: #ff6b6b;" onclick="setColor('#ff6b6b', this)"></div>
+                    <div class="color-btn" style="background: #4facfe;" onclick="setColor('#4facfe', this)"></div>
+                    <div class="color-btn" style="background: #43e97b;" onclick="setColor('#43e97b', this)"></div>
+                    <div class="color-btn" style="background: #feca57;" onclick="setColor('#feca57', this)"></div>
+                    <div class="color-btn" style="background: #ff9f43;" onclick="setColor('#ff9f43', this)"></div>
+                    <div class="color-btn" style="background: #a55eea;" onclick="setColor('#a55eea', this)"></div>
+                    <div class="color-btn" style="background: #ffffff;" onclick="setColor('#ffffff', this)"></div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h3>画笔大小</h3>
+                <div class="brush-size">
+                    <input type="range" min="1" max="30" value="5" id="brushSize" oninput="setBrushSize(this.value)">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button class="btn btn-start" id="startBtn" onclick="startGame()">开始游戏</button>
+        <button class="btn btn-clear" onclick="clearCanvas()">清空画布</button>
+        <div class="message" id="message"></div>
+        <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 10px;">
+            在画布上画画 | 输入答案猜词 | 答对得分
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const words = [
+            '苹果', '香蕉', '猫', '狗', '太阳', '月亮', '房子', '汽车',
+            '花朵', '树木', '鸟', '鱼', '手机', '电脑', '电视', '书',
+            '铅笔', '眼镜', '手表', '鞋子', '帽子', '裙子', '裤子',
+            '西瓜', '葡萄', '草莓', '蛋糕', '咖啡', '茶', '牛奶'
+        ];
+        
+        let gameRunning = false;
+        let score = 0;
+        let round = 1;
+        let currentWord = '';
+        let isDrawing = false;
+        let currentColor = '#000000';
+        let brushSize = 5;
+        let lastX = 0;
+        let lastY = 0;
+        
+        // 初始化画布
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // 画布事件
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // 触摸支持
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            lastX = touch.clientX - rect.left;
+            lastY = touch.clientY - rect.top;
+            isDrawing = true;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            drawLine(lastX, lastY, x, y);
+            lastX = x;
+            lastY = y;
+        });
+        
+        canvas.addEventListener('touchend', stopDrawing);
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            drawLine(lastX, lastY, e.offsetX, e.offsetY);
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+        
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = brushSize;
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+        }
+        
+        function setColor(color, btn) {
+            currentColor = color;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        
+        function setBrushSize(size) {
+            brushSize = size;
+        }
+        
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        function getRandomWord() {
+            return words[Math.floor(Math.random() * words.length)];
+        }
+        
+        function showMessage(text) {
+            document.getElementById('message').textContent = text;
+        }
+        
+        function checkAnswer() {
+            const answer = document.getElementById('answerInput').value.trim();
+            if (!answer) return;
+            
+            if (answer === currentWord) {
+                score += 10;
+                round++;
+                showMessage('🎉 答对了！+10分');
+                document.getElementById('answerInput').value = '';
+                
+                setTimeout(() => {
+                    nextRound();
+                }, 1500);
+            } else {
+                showMessage('❌ 答错了，再试试！');
+                document.getElementById('answerInput').value = '';
+            }
+            
+            updateUI();
+        }
+        
+        function nextRound() {
+            clearCanvas();
+            currentWord = getRandomWord();
+            document.getElementById('currentWord').textContent = currentWord;
+            showMessage('');
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('round').textContent = round;
+        }
+        
+        function startGame() {
+            if (gameRunning) return;
+            
+            gameRunning = true;
+            score = 0;
+            round = 1;
+            
+            clearCanvas();
+            currentWord = getRandomWord();
+            document.getElementById('currentWord').textContent = currentWord;
+            
+            updateUI();
+            document.getElementById('startBtn').textContent = '游戏中...';
+            showMessage('开始画画吧！');
+        }
+    </script>
+</body>
+</html>

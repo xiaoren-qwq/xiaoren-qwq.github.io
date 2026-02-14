@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 500px;
+            max-width: 90%;
+        }
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .setting-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .setting-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .setting-icon {
+            font-size: 28px;
+            margin-right: 15px;
+        }
+        .setting-info {
+            flex: 1;
+        }
+        .setting-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .setting-desc {
+            font-size: 14px;
+            color: #666;
+        }
+        .setting-arrow {
+            font-size: 20px;
+            color: #999;
+        }
+        .btn-back {
+            width: 100%;
+            padding: 15px;
+            background: #f0f0f0;
+            color: #666;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: #e0e0e0;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 450px;
+            max-width: 90%;
+        }
+        .dev-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .dev-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .dev-option:hover {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(5px);
+        }
+        .dev-icon {
+            font-size: 32px;
+            margin-right: 15px;
+        }
+        .dev-info {
+            flex: 1;
+        }
+        .dev-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .dev-desc {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h3 {
+            color: #667eea;
+            font-size: 20px;
+        }
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .volume-control {
+            margin: 20px 0;
+        }
+        .volume-slider {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-sound-toggle {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .contact-form textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .contact-form textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #43e97b, #38f9d7);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .about-content {
+            text-align: center;
+        }
+        .about-logo {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        .about-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .about-version {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .about-desc {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .admin-login-form input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .admin-login-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-admin-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .step-indicator {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ 设置</h1>
+        
+        <div class="setting-item" onclick="showModal('soundModal')">
+            <div style="display: flex; align-items: center;">
+                <span class="setting-icon">🔊</span>
+                <div class="setting-info">
+                    <div class="setting-title">调整声音</div>
+                    <div class="setting-desc">调节音量大小，切换声音开关</div>
+                </div>
+            </div>
+            <span class="setting-arrow">›</span>
+        </div>
+
+        <div class="setting-item" onclick="showModal('contactModal')">
+            <div style="display: flex; align-items: center;">
+                <span class="setting-icon">📧</span>
+                <div class="setting-info">
+                    <div class="setting-title">联系开发者</div>
+                    <div class="setting-desc">有问题？直接联系作者</div>
+                </div>
+            </div>
+            <span class="setting-arrow">›</span>
+        </div>
+
+        <div class="setting-item" onclick="showModal('aboutModal')">
+            <div style="display: flex; align-items: center;">
+                <span class="setting-icon">ℹ️</span>
+                <div class="setting-info">
+                    <div class="setting-title">关于</div>
+                    <div class="setting-desc">查看游戏版本信息</div>
+                </div>
+            </div>
+            <span class="setting-arrow">›</span>
+        </div>
+
+        <div class="setting-item" onclick="showModal('devModal')">
+            <div style="display: flex; align-items: center;">
+                <span class="setting-icon">👨‍💻</span>
+                <div class="setting-info">
+                    <div class="setting-title">开发人员</div>
+                    <div class="setting-desc">远程操控、系统管理</div>
+                </div>
+            </div>
+            <span class="setting-arrow">›</span>
+        </div>
+
+        <div class="setting-item" onclick="showModal('adminModal')">
+            <div style="display: flex; align-items: center;">
+                <span class="setting-icon">🔐</span>
+                <div class="setting-info">
+                    <div class="setting-title">主管设置</div>
+                    <div class="setting-desc">管理员后台入口</div>
+                </div>
+            </div>
+            <span class="setting-arrow">›</span>
+        </div>
+
+        <button class="btn-back" onclick="location.href='../index.html'">返回主页</button>
+    </div>
+
+    <!-- 声音设置弹窗 -->
+    <div class="modal" id="soundModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔊 调整声音</h3>
+                <button class="btn-close" onclick="closeModal('soundModal')">×</button>
+            </div>
+            <div class="volume-control">
+                <label>音量大小</label>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="70" oninput="updateVolume()">
+                <p style="text-align: center; margin-top: 10px; color: #667eea; font-weight: bold;" id="volumeValue">70%</p>
+            </div>
+            <button class="btn-sound-toggle" id="soundToggle" onclick="toggleSound()">🔊 声音开启</button>
+        </div>
+    </div>
+
+    <!-- 联系开发者弹窗 -->
+    <div class="modal" id="contactModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📧 联系开发者</h3>
+                <button class="btn-close" onclick="closeModal('contactModal')">×</button>
+            </div>
+            <div class="contact-form">
+                <textarea id="contactMessage" placeholder="请描述您遇到的问题或建议..."></textarea>
+                <button class="btn-submit" onclick="submitContact()">发送消息</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关于弹窗 -->
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>ℹ️ 关于</h3>
+                <button class="btn-close" onclick="closeModal('aboutModal')">×</button>
+            </div>
+            <div class="about-content">
+                <div class="about-logo">🎮</div>
+                <div class="about-title">游戏世界</div>
+                <div class="about-version">版本 1.0.0</div>
+                <div class="about-desc">
+                    这是一个包含15款精品游戏的综合性游戏平台。<br>
+                    竞技对战、脑力休闲、趣味互动，应有尽有！<br>
+                    <br>
+                    <strong>功能特色：</strong><br>
+                    ✓ 账号系统（登录/注册/设备绑定）<br>
+                    ✓ 消息系统（全局/私聊/群聊）<br>
+                    ✓ 15款精品游戏<br>
+                    ✓ 连点器测试与排名<br>
+                    ✓ 管理员后台<br>
+                    ✓ 服务器同步功能
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员登录弹窗 -->
+    <div class="modal" id="devModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👨‍💻 开发人员选项</h3>
+                <button class="btn-close" onclick="closeModal('devModal')">×</button>
+            </div>
+            
+            <div class="dev-options">
+                <div class="dev-option" onclick="handleRemoteControl()">
+                    <div class="dev-icon">🎮</div>
+                    <div class="dev-info">
+                        <div class="dev-title">远程操控</div>
+                        <div class="dev-desc">远程控制设备操作</div>
+                    </div>
+                </div>
+                
+                <div class="dev-option" onclick="handleRestartSystem()">
+                    <div class="dev-icon">🔄</div>
+                    <div class="dev-info">
+                        <div class="dev-title">重启系统</div>
+                        <div class="dev-desc">重新启动操作系统</div>
+                    </div>
+                </div>
+                
+                <div class="dev-option" onclick="handleShutdownSystem()">
+                    <div class="dev-icon">⏻</div>
+                    <div class="dev-info">
+                        <div class="dev-title">关机</div>
+                        <div class="dev-desc">关闭系统</div>
+                    </div>
+                </div>
+                
+                <div class="dev-option" onclick="handleRemoteDesktop()">
+                    <div class="dev-icon">🖥️</div>
+                    <div class="dev-info">
+                        <div class="dev-title">远程桌面</div>
+                        <div class="dev-desc">启动远程桌面连接</div>
+                    </div>
+                </div>
+                
+                <div class="dev-option" onclick="handleManageFiles()">
+                    <div class="dev-icon">📁</div>
+                    <div class="dev-info">
+                        <div class="dev-title">文件管理</div>
+                        <div class="dev-desc">管理操作系统文件</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔐 主管设置</h3>
+                <button class="btn-close" onclick="closeModal('adminModal')">×</button>
+            </div>
+            <div class="step-indicator" id="stepIndicator">第一步：验证管理员账号</div>
+            
+            <div id="step1" class="admin-login-form">
+                <input type="text" id="adminUsername" placeholder="管理员账号">
+                <input type="password" id="adminPassword" placeholder="管理员密码">
+                <button class="btn-admin-login" onclick="verifyAdmin()">下一步</button>
+            </div>
+            
+            <div id="step2" class="admin-login-form" style="display: none;">
+                <input type="password" id="secondPassword" placeholder="二级密码（二次验证）">
+                <button class="btn-admin-login" onclick="verifySecondPassword()">进入后台</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let soundEnabled = true;
+        let volume = 70;
+        let adminStep = 1;
+
+        // 显示弹窗
+        function showModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        // 关闭弹窗
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            // 重置管理员登录状态
+            if (id === 'adminModal') {
+                adminStep = 1;
+                document.getElementById('step1').style.display = 'block';
+                document.getElementById('step2').style.display = 'none';
+                document.getElementById('stepIndicator').textContent = '第一步：验证管理员账号';
+                document.getElementById('adminUsername').value = '';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('secondPassword').value = '';
+            }
+        }
+
+        // 更新音量
+        function updateVolume() {
+            volume = document.getElementById('volumeSlider').value;
+            document.getElementById('volumeValue').textContent = volume + '%';
+            localStorage.setItem('gameVolume', volume);
+        }
+
+        // 切换声音
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggle');
+            if (soundEnabled) {
+                btn.textContent = '🔊 声音开启';
+                btn.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+            } else {
+                btn.textContent = '🔇 声音关闭';
+                btn.style.background = '#999';
+            }
+            localStorage.setItem('gameSoundEnabled', soundEnabled);
+        }
+
+        // 提交联系消息
+        function submitContact() {
+            const message = document.getElementById('contactMessage').value.trim();
+            if (!message) {
+                alert('请输入消息内容');
+                return;
+            }
+            alert('消息已发送！开发者会尽快回复您。');
+            document.getElementById('contactMessage').value = '';
+            closeModal('contactModal');
+        }
+
+        // 验证管理员账号
+        function verifyAdmin() {
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+
+            if (username === 'adminuser' && password === 'adminuser') {
+                adminStep = 2;
+                document.getElementById('step1').style.display = 'none';
+                document.getElementById('step2').style.display = 'block';
+                document.getElementById('stepIndicator').textContent = '第二步：二级密码验证';
+            } else {
+                alert('管理员账号或密码错误！');
+            }
+        }
+
+        // 验证二级密码
+        function verifySecondPassword() {
+            const secondPassword = document.getElementById('secondPassword').value;
+
+            if (secondPassword === '20150713@toby') {
+                closeModal('adminModal');
+                location.href = 'admin/admin.html';
+            } else {
+                alert('二级密码错误！');
+            }
+        }
+
+        // 开发人员功能
+        function handleRemoteControl() {
+            alert('远程操控功能已启动\n\n注意：此功能需要目标设备开启远程控制权限\n功能说明：可以远程操控设备进行操作');
+        }
+
+        function handleRestartSystem() {
+            if (confirm('确定要重启系统吗？\n\n这将重新启动操作系统，所有未保存的数据可能会丢失。')) {
+                alert('系统重启指令已发送\n\n注意：此功能在Web环境中无法直接执行，需要在本地系统中实现');
+            }
+        }
+
+        function handleShutdownSystem() {
+            if (confirm('确定要关闭系统吗？\n\n这将关闭操作系统，所有未保存的数据可能会丢失。')) {
+                alert('系统关机指令已发送\n\n注意：此功能在Web环境中无法直接执行，需要在本地系统中实现');
+            }
+        }
+
+        function handleRemoteDesktop() {
+            alert('远程桌面功能已启动\n\n功能说明：\n1. 可以远程访问桌面界面\n2. 需要目标设备开启远程桌面服务\n3. 请输入远程IP地址和端口\n\n当前状态：等待连接...');
+        }
+
+        function handleManageFiles() {
+            alert('文件管理功能已启动\n\n功能说明：\n1. 浏览系统文件\n2. 创建/删除/重命名文件\n3. 管理权限\n\n注意：此功能需要管理员权限');
+        }
+
+        // 加载保存的设置
+        function loadSettings() {
+            const savedVolume = localStorage.getItem('gameVolume');
+            if (savedVolume) {
+                volume = savedVolume;
+                document.getElementById('volumeSlider').value = volume;
+                document.getElementById('volumeValue').textContent = volume + '%';
+            }
+
+            const savedSoundEnabled = localStorage.getItem('gameSoundEnabled');
+            if (savedSoundEnabled !== null) {
+                soundEnabled = savedSoundEnabled === 'true';
+                const btn = document.getElementById('soundToggle');
+                if (soundEnabled) {
+                    btn.textContent = '🔊 声音开启';
+                    btn.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+                } else {
+                    btn.textContent = '🔇 声音关闭';
+                    btn.style.background = '#999';
+                }
+            }
+        }
+
+        loadSettings();
+
+        // 点击弹窗外部关闭
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal(this.id);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

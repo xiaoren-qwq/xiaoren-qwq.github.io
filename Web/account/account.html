@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账号系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 400px;
+            max-width: 90%;
+        }
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-back {
+            background: #f0f0f0;
+            color: #666;
+            margin-top: 15px;
+        }
+        .btn-back:hover {
+            background: #e0e0e0;
+        }
+        .device-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .toggle-mode {
+            text-align: center;
+            margin-top: 15px;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .toggle-mode:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="title">🎮 账号登录</h1>
+        <div id="message" class="message" style="display: none;"></div>
+        
+        <div id="login-form">
+            <div class="form-group">
+                <label>账号名称</label>
+                <input type="text" id="login-username" placeholder="请输入账号名称">
+            </div>
+            <div class="form-group">
+                <label>账号密码</label>
+                <input type="password" id="login-password" placeholder="请输入密码">
+            </div>
+            <button class="btn btn-primary" onclick="handleLogin()">登录</button>
+            <button class="btn btn-back" onclick="location.href='../index.html'">返回主页</button>
+        </div>
+
+        <div id="register-form" style="display: none;">
+            <div class="form-group">
+                <label>账号名称</label>
+                <input type="text" id="reg-username" placeholder="请输入账号名称（3-15位）">
+            </div>
+            <div class="form-group">
+                <label>账号密码</label>
+                <input type="password" id="reg-password" placeholder="请输入密码（6-20位）">
+            </div>
+            <div class="form-group">
+                <label>确认密码</label>
+                <input type="password" id="reg-confirm" placeholder="请再次输入密码">
+            </div>
+            <div class="form-group">
+                <label>身份证号码</label>
+                <input type="text" id="reg-idcard" placeholder='请输入身份证号（可自定义，带双引号）'>
+            </div>
+            <div class="form-group">
+                <label>头像</label>
+                <input type="file" id="reg-avatar" accept="image/*" onchange="previewAvatar(this)">
+                <div id="avatar-preview" style="margin-top: 10px; width: 80px; height: 80px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <span style="color: #999;">👤</span>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="handleRegister()">注册</button>
+            <button class="btn btn-back" onclick="toggleMode()">返回登录</button>
+        </div>
+
+        <div class="device-info">
+            <strong>📱 设备信息：</strong><br>
+            <span id="device-id">正在获取...</span>
+        </div>
+
+        <div id="idcard-supplement-form" style="display: none;">
+            <div class="form-group">
+                <label style="color: #ff6b6b;">⚠️ 请补充身份证信息</label>
+            </div>
+            <div class="form-group">
+                <label>身份证号码</label>
+                <input type="text" id="supplement-idcard" placeholder='请输入身份证号（可自定义，带双引号）'>
+            </div>
+            <button class="btn btn-primary" onclick="handleSupplementIdCard()">保存</button>
+            <button class="btn btn-back" onclick="location.href='../index.html'">返回主页</button>
+        </div>
+
+        <div id="idcard-form" style="display: none;">
+            <div class="form-group">
+                <label style="color: #ff6b6b;">⚠️ 检测到账号在其他设备登录</label>
+            </div>
+            <div class="form-group">
+                <label>请输入身份证号进行验证</label>
+                <input type="text" id="verify-idcard" placeholder='请输入身份证号'>
+            </div>
+            <button class="btn btn-primary" onclick="verifyIdCard()">验证</button>
+            <button class="btn btn-back" onclick="location.href='../index.html'">返回主页</button>
+        </div>
+    </div>
+
+    <script>
+        let pendingUsername = '';
+        let pendingPassword = '';
+        let uploadedAvatar = null;
+
+        // 生成设备ID
+        function generateDeviceId() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const txt = 'device-id-check';
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillText(txt, 2, 2);
+            const fingerprint = canvas.toDataURL().replace('data:image/png;base64,', '');
+            const deviceId = btoa(fingerprint.substring(0, 50));
+            return deviceId;
+        }
+
+        const deviceId = generateDeviceId();
+        document.getElementById('device-id').textContent = deviceId.substring(0, 30) + '...';
+
+        // 从localStorage获取用户数据
+        function getUsers() {
+            const users = localStorage.getItem('gameUsers');
+            return users ? JSON.parse(users) : {};
+        }
+
+        // 保存用户数据
+        function saveUsers(users) {
+            localStorage.setItem('gameUsers', JSON.stringify(users));
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = text;
+            msgDiv.className = 'message ' + type;
+            msgDiv.style.display = 'block';
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 切换登录/注册模式
+        function toggleMode() {
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const idcardForm = document.getElementById('idcard-form');
+            const title = document.getElementById('title');
+
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                idcardForm.style.display = 'none';
+                title.textContent = '🎮 账号登录';
+            } else {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                idcardForm.style.display = 'none';
+                title.textContent = '📝 账号注册';
+            }
+        }
+
+        // 预览头像
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedAvatar = e.target.result;
+                    const preview = document.getElementById('avatar-preview');
+                    preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // 检查身份证号是否重复
+        function isIdCardExists(idcard, excludeUsername = '') {
+            const users = getUsers();
+            for (let username in users) {
+                if (username !== excludeUsername && users[username].idcard === idcard) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // 处理登录
+        function handleLogin() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!username || !password) {
+                showMessage('请输入账号和密码', 'error');
+                return;
+            }
+
+            const users = getUsers();
+
+            if (users[username]) {
+                // 已注册账号，验证密码
+                if (users[username].password === password) {
+                    // 检查是否被封禁
+                    if (users[username].banned) {
+                        showMessage('该账号已被封禁，请联系管理员', 'error');
+                        return;
+                    }
+
+                    // 验证设备绑定
+                    if (users[username].deviceId && users[username].deviceId !== deviceId) {
+                        // 显示身份证验证表单
+                        pendingUsername = username;
+                        pendingPassword = password;
+                        document.getElementById('login-form').style.display = 'none';
+                        document.getElementById('idcard-form').style.display = 'block';
+                        showMessage('请输入身份证号验证身份', 'info');
+                        return;
+                    }
+
+                    // 登录成功
+                    completeLogin(username);
+                } else {
+                    showMessage('密码错误', 'error');
+                }
+            } else {
+                // 未注册账号，自动进入注册流程
+                showMessage('账号不存在，将自动进入注册流程', 'info');
+                setTimeout(() => {
+                    document.getElementById('reg-username').value = username;
+                    document.getElementById('reg-password').value = password;
+                    toggleMode();
+                }, 1500);
+            }
+        }
+
+        // 验证身份证号
+        function verifyIdCard() {
+            const idcard = document.getElementById('verify-idcard').value.trim();
+            
+            if (!idcard) {
+                showMessage('请输入身份证号', 'error');
+                return;
+            }
+
+            const users = getUsers();
+            
+            if (users[pendingUsername] && users[pendingUsername].idcard === idcard) {
+                // 验证成功，更新设备信息
+                completeLogin(pendingUsername);
+            } else {
+                showMessage('身份证号错误，请重试', 'error');
+            }
+        }
+
+        // 完成登录
+        function completeLogin(username) {
+            const users = getUsers();
+            users[username].deviceId = deviceId;
+            users[username].lastLogin = new Date().toISOString();
+            saveUsers(users);
+
+            localStorage.setItem('currentUser', username);
+            showMessage('登录成功！正在跳转...', 'success');
+
+            setTimeout(() => {
+                location.href = '../index.html';
+            }, 1000);
+        }
+
+        // 处理注册
+        function handleRegister() {
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const confirm = document.getElementById('reg-confirm').value;
+            const idcard = document.getElementById('reg-idcard').value.trim();
+
+            // 验证用户名
+            if (username.length < 3 || username.length > 15) {
+                showMessage('账号名称长度应为3-15位', 'error');
+                return;
+            }
+
+            // 验证密码
+            if (password.length < 6 || password.length > 20) {
+                showMessage('密码长度应为6-20位', 'error');
+                return;
+            }
+
+            // 验证确认密码
+            if (password !== confirm) {
+                showMessage('两次输入的密码不一致', 'error');
+                return;
+            }
+
+            // 验证身份证号
+            if (!idcard) {
+                showMessage('请输入身份证号', 'error');
+                return;
+            }
+
+            const users = getUsers();
+
+            // 检查账号是否已存在
+            if (users[username]) {
+                showMessage('该账号名称已被使用', 'error');
+                return;
+            }
+
+            // 检查身份证号是否已存在
+            if (isIdCardExists(idcard)) {
+                showMessage('该身份证号已被使用', 'error');
+                return;
+            }
+
+            // 注册新用户
+            users[username] = {
+                password: password,
+                deviceId: deviceId,
+                idcard: idcard,
+                avatar: uploadedAvatar || null,
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                banned: false,
+                coins: 100,
+                games: {},
+                friends: []
+            };
+
+            saveUsers(users);
+            localStorage.setItem('currentUser', username);
+
+            showMessage('注册成功！赠送100金币，正在跳转...', 'success');
+
+            setTimeout(() => {
+                location.href = '../index.html';
+            }, 1500);
+        }
+
+        // 检查是否已登录
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+            const users = getUsers();
+            if (users[currentUser]) {
+                // 检查是否有身份证信息
+                if (!users[currentUser].idcard) {
+                    // 显示身份证补充表单
+                    document.getElementById('login-form').style.display = 'none';
+                    document.getElementById('idcard-supplement-form').style.display = 'block';
+                    showMessage('请补充身份证信息', 'info');
+                } else {
+                    showMessage('您已登录，正在跳转...', 'info');
+                    setTimeout(() => {
+                        location.href = '../index.html';
+                    }, 1000);
+                }
+            }
+        }
+
+        // 处理身份证补充
+        function handleSupplementIdCard() {
+            const idcard = document.getElementById('supplement-idcard').value.trim();
+            
+            if (!idcard) {
+                showMessage('请输入身份证号', 'error');
+                return;
+            }
+            
+            // 检查身份证号是否已被其他用户使用
+            if (isIdCardExists(idcard, currentUser)) {
+                showMessage('该身份证号已被使用', 'error');
+                return;
+            }
+            
+            // 更新用户信息
+            const users = getUsers();
+            users[currentUser].idcard = idcard;
+            saveUsers(users);
+            
+            showMessage('身份证信息保存成功！正在跳转...', 'success');
+            
+            setTimeout(() => {
+                location.href = '../index.html';
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

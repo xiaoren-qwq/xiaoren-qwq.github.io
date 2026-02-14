@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>谁是卧底</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .header {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 { color: white; font-size: 24px; }
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+        }
+        .setup-panel {
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .setup-panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .player-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .player-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .player-list {
+            margin: 20px 0;
+            min-height: 100px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .player-item span {
+            font-weight: bold;
+            color: #333;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .btn-start { background: linear-gradient(45deg, #43e97b, #38f9d7); color: white; }
+        .btn-add { background: linear-gradient(45deg, #4facfe, #00f2fe); color: white; }
+        .btn-remove { background: linear-gradient(45deg, #ff6b6b, #ee5a5a); color: white; }
+        .btn-back { background: linear-gradient(45deg, #f093fb, #f5576c); color: white; }
+        .btn-vote { background: linear-gradient(45deg, #feca57, #ff9f43); color: white; }
+        .btn:hover { transform: scale(1.05); }
+        
+        .game-panel {
+            display: none;
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+        }
+        .word-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .word-card h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .word-card .word {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .player-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+        .player-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .player-card.selected {
+            border-color: #667eea;
+            background: #e3f2fd;
+        }
+        .player-card.eliminated {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .player-card .name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .player-card .status {
+            font-size: 14px;
+            color: #666;
+        }
+        .chat-area {
+            margin-top: 20px;
+        }
+        .chat-messages {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .chat-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .phase-indicator {
+            background: linear-gradient(45deg, #feca57, #ff9f43);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .result-panel {
+            display: none;
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .result-panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        .result-panel .winner {
+            font-size: 24px;
+            color: #43e97b;
+            margin-bottom: 20px;
+        }
+        .result-panel .spy {
+            font-size: 20px;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🕵️ 谁是卧底</h1>
+        <button class="btn btn-back" onclick="location.href='../index.html'">返回</button>
+    </div>
+    
+    <div class="game-container">
+        <!-- 设置面板 -->
+        <div class="setup-panel" id="setupPanel">
+            <h2>🎮 游戏设置</h2>
+            <input type="text" class="player-input" id="playerName" placeholder="输入玩家名称">
+            <button class="btn btn-add" onclick="addPlayer()">添加玩家</button>
+            <div class="player-list" id="playerList"></div>
+            <p style="color: #666; margin-bottom: 15px;">至少需要4名玩家才能开始游戏</p>
+            <button class="btn btn-start" onclick="startGame()">开始游戏</button>
+        </div>
+        
+        <!-- 游戏面板 -->
+        <div class="game-panel" id="gamePanel">
+            <div class="phase-indicator" id="phaseIndicator">查看词语</div>
+            
+            <div class="word-card" id="wordCard">
+                <h3>你的词语</h3>
+                <div class="word" id="currentWord">???</div>
+            </div>
+            
+            <div class="players-grid" id="playersGrid"></div>
+            
+            <div class="chat-area">
+                <div class="chat-messages" id="chatMessages"></div>
+                <input type="text" class="chat-input" id="chatInput" placeholder="输入发言..." onkeypress="if(event.key==='Enter')sendChat()">
+            </div>
+            
+            <button class="btn btn-vote" onclick="startVoting()" id="voteBtn" style="display: none; margin-top: 15px;">开始投票</button>
+        </div>
+        
+        <!-- 结果面板 -->
+        <div class="result-panel" id="resultPanel">
+            <h2 id="resultTitle">游戏结束</h2>
+            <div class="winner" id="winnerText"></div>
+            <div class="spy" id="spyText"></div>
+            <button class="btn btn-start" onclick="resetGame()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        const wordPairs = [
+            ['苹果', '香蕉'],
+            ['猫', '狗'],
+            ['太阳', '月亮'],
+            ['汽车', '自行车'],
+            ['手机', '电脑'],
+            ['咖啡', '茶'],
+            ['书', '杂志'],
+            ['眼镜', '墨镜'],
+            ['裙子', '裤子'],
+            ['蛋糕', '面包']
+        ];
+        
+        let players = [];
+        let currentPlayerIndex = 0;
+        let currentPair = [];
+        let spyIndex = -1;
+        let phase = 'setup';
+        let votes = {};
+        let eliminatedPlayers = [];
+        
+        function addPlayer() {
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('请输入玩家名称');
+                return;
+            }
+            
+            if (players.find(p => p.name === name)) {
+                alert('该玩家已存在');
+                return;
+            }
+            
+            players.push({
+                name: name,
+                word: '',
+                isSpy: false,
+                eliminated: false
+            });
+            
+            nameInput.value = '';
+            updatePlayerList();
+        }
+        
+        function removePlayer(index) {
+            players.splice(index, 1);
+            updatePlayerList();
+        }
+        
+        function updatePlayerList() {
+            const list = document.getElementById('playerList');
+            list.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `
+                    <span>${index + 1}. ${player.name}</span>
+                    <button class="btn btn-remove" style="padding: 5px 15px; font-size: 12px;" onclick="removePlayer(${index})">移除</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+        
+        function startGame() {
+            if (players.length < 4) {
+                alert('至少需要4名玩家才能开始游戏');
+                return;
+            }
+            
+            // 随机选择词语对
+            currentPair = wordPairs[Math.floor(Math.random() * wordPairs.length)];
+            
+            // 随机选择卧底
+            spyIndex = Math.floor(Math.random() * players.length);
+            
+            // 分配词语
+            players.forEach((player, index) => {
+                player.isSpy = index === spyIndex;
+                player.word = player.isSpy ? currentPair[1] : currentPair[0];
+                player.eliminated = false;
+            });
+            
+            eliminatedPlayers = [];
+            currentPlayerIndex = 0;
+            phase = 'viewWords';
+            
+            document.getElementById('setupPanel').style.display = 'none';
+            document.getElementById('gamePanel').style.display = 'block';
+            
+            showPlayerWord();
+            updatePlayersGrid();
+            document.getElementById('chatMessages').innerHTML = '<div style="color: #666; text-align: center;">游戏开始！请依次查看自己的词语</div>';
+        }
+        
+        function showPlayerWord() {
+            const player = players[currentPlayerIndex];
+            document.getElementById('currentWord').textContent = player.word;
+            document.getElementById('phaseIndicator').textContent = `${player.name} 查看词语`;
+        }
+        
+        function nextPlayer() {
+            currentPlayerIndex++;
+            
+            if (currentPlayerIndex >= players.length) {
+                phase = 'discussion';
+                document.getElementById('wordCard').style.display = 'none';
+                document.getElementById('phaseIndicator').textContent = '讨论阶段';
+                document.getElementById('voteBtn').style.display = 'inline-block';
+                document.getElementById('chatMessages').innerHTML += '<div style="color: #43e97b; text-align: center; margin-top: 10px;">--- 所有玩家已查看词语，开始讨论 ---</div>';
+            } else {
+                showPlayerWord();
+            }
+        }
+        
+        function updatePlayersGrid() {
+            const grid = document.getElementById('playersGrid');
+            grid.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const card = document.createElement('div');
+                card.className = 'player-card' + (player.eliminated ? ' eliminated' : '');
+                card.innerHTML = `
+                    <div class="name">${player.name}</div>
+                    <div class="status">${player.eliminated ? '已淘汰' : '存活'}</div>
+                `;
+                
+                if (phase === 'voting' && !player.eliminated) {
+                    card.onclick = () => vote(index);
+                    card.style.cursor = 'pointer';
+                }
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const messages = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.style.padding = '8px';
+            msgDiv.style.marginBottom = '5px';
+            msgDiv.style.borderBottom = '1px solid #e0e0e0';
+            msgDiv.innerHTML = `<strong style="color: #667eea;">${players[currentPlayerIndex].name}:</strong> ${message}`;
+            messages.appendChild(msgDiv);
+            messages.scrollTop = messages.scrollHeight;
+            
+            input.value = '';
+            
+            // 切换到下一个玩家发言
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.filter(p => !p.eliminated).length;
+            document.getElementById('phaseIndicator').textContent = `${players[currentPlayerIndex].name} 发言`;
+        }
+        
+        function startVoting() {
+            phase = 'voting';
+            votes = {};
+            document.getElementById('phaseIndicator').textContent = '投票阶段 - 选择要淘汰的玩家';
+            document.getElementById('voteBtn').style.display = 'none';
+            document.getElementById('chatInput').disabled = true;
+            document.getElementById('chatMessages').innerHTML += '<div style="color: #feca57; text-align: center; margin-top: 10px;">--- 投票阶段开始，点击玩家卡片投票 ---</div>';
+            updatePlayersGrid();
+        }
+        
+        function vote(targetIndex) {
+            votes[targetIndex] = (votes[targetIndex] || 0) + 1;
+            
+            const player = players[targetIndex];
+            player.eliminated = true;
+            eliminatedPlayers.push(targetIndex);
+            
+            document.getElementById('chatMessages').innerHTML += `<div style="color: #ff6b6b; text-align: center; margin-top: 10px;">--- ${player.name} 被投票淘汰 ---</div>`;
+            
+            checkWinCondition();
+        }
+        
+        function checkWinCondition() {
+            const alivePlayers = players.filter(p => !p.eliminated);
+            const aliveSpies = alivePlayers.filter(p => p.isSpy);
+            
+            if (alivePlayers.length <= 2) {
+                // 卧底获胜
+                endGame('spy');
+            } else if (aliveSpies.length === 0) {
+                // 平民获胜
+                endGame('civilian');
+            } else {
+                updatePlayersGrid();
+            }
+        }
+        
+        function endGame(winner) {
+            phase = 'ended';
+            
+            document.getElementById('gamePanel').style.display = 'none';
+            document.getElementById('resultPanel').style.display = 'block';
+            
+            const spyPlayer = players[spyIndex];
+            
+            if (winner === 'spy') {
+                document.getElementById('resultTitle').textContent = '🎭 卧底获胜！';
+                document.getElementById('winnerText').textContent = '卧底成功隐藏到最后！';
+            } else {
+                document.getElementById('resultTitle').textContent = '🎉 平民获胜！';
+                document.getElementById('winnerText').textContent = '平民成功找出卧底！';
+            }
+            
+            document.getElementById('spyText').innerHTML = `卧底是: <strong>${spyPlayer.name}</strong><br>卧底词语: <strong>${spyPlayer.word}</strong><br>平民词语: <strong>${currentPair[0]}</strong>`;
+        }
+        
+        function resetGame() {
+            players = [];
+            currentPlayerIndex = 0;
+            phase = 'setup';
+            votes = {};
+            eliminatedPlayers = [];
+            
+            document.getElementById('setupPanel').style.display = 'block';
+            document.getElementById('gamePanel').style.display = 'none';
+            document.getElementById('resultPanel').style.display = 'none';
+            document.getElementById('wordCard').style.display = 'block';
+            document.getElementById('chatInput').disabled = false;
+            document.getElementById('playerName').value = '';
+            
+            updatePlayerList();
+        }
+    </script>
+</body>
+</html>
