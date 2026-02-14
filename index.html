@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .title {
+            font-size: 48px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 50px;
+            animation: fadeInDown 1s ease-out;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .btn-container {
+            animation: fadeInUp 1s ease-out 0.3s backwards;
+        }
+
+        .start-btn {
+            padding: 20px 60px;
+            font-size: 24px;
+            color: white;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .start-btn:active {
+            transform: translateY(-2px);
+        }
+
+        /* 彩带画布 */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+    
+    <h1 class="title">欢迎你来到这个网站</h1>
+    
+    <div class="btn-container">
+        <a href="./Web/index.html" class="start-btn">现在开始!!!</a>
+    </div>
+
+    <script>
+        // 彩带特效
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const confetti = [];
+        const confettiCount = 150;
+        const gravity = 0.5;
+        const terminalVelocity = 5;
+        const drag = 0.075;
+        const colors = [
+            { front: 'red', back: 'darkred' },
+            { front: 'green', back: 'darkgreen' },
+            { front: 'blue', back: 'darkblue' },
+            { front: 'yellow', back: 'darkyellow' },
+            { front: 'orange', back: 'darkorange' },
+            { front: 'pink', back: 'darkpink' },
+            { front: 'purple', back: 'darkpurple' },
+            { front: 'turquoise', back: 'darkturquoise' }
+        ];
+
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+
+        window.addEventListener('resize', resizeCanvas);
+
+        const randomRange = (min, max) => Math.random() * (max - min) + min;
+
+        const initConfetti = () => {
+            for (let i = 0; i < confettiCount; i++) {
+                confetti.push({
+                    color: colors[Math.floor(randomRange(0, colors.length))],
+                    dimensions: {
+                        x: randomRange(10, 20),
+                        y: randomRange(10, 30)
+                    },
+                    position: {
+                        x: randomRange(0, canvas.width),
+                        y: canvas.height - 1
+                    },
+                    rotation: randomRange(0, 2 * Math.PI),
+                    scale: {
+                        x: 1,
+                        y: 1
+                    },
+                    velocity: {
+                        x: randomRange(-25, 25),
+                        y: randomRange(0, -50)
+                    }
+                });
+            }
+        };
+
+        const render = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            confetti.forEach((confetto, index) => {
+                let width = confetto.dimensions.x * confetto.scale.x;
+                let height = confetto.dimensions.y * confetto.scale.y;
+
+                ctx.translate(confetto.position.x, confetto.position.y);
+                ctx.rotate(confetto.rotation);
+
+                confetto.velocity.x -= confetto.velocity.x * drag;
+                confetto.velocity.y = Math.min(confetto.velocity.y + gravity, terminalVelocity);
+                confetto.velocity.x += Math.random() > 0.5 ? Math.random() : -Math.random();
+
+                confetto.position.x += confetto.velocity.x;
+                confetto.position.y += confetto.velocity.y;
+
+                if (confetto.position.y >= canvas.height) confetti.splice(index, 1);
+
+                if (confetto.position.x > canvas.width) confetto.position.x = 0;
+                if (confetto.position.x < 0) confetto.position.x = canvas.width;
+
+                confetto.scale.y = Math.cos(confetto.position.y * 0.1);
+                ctx.fillStyle = confetto.scale.y > 0 ? confetto.color.front : confetto.color.back;
+
+                ctx.fillRect(-width / 2, -height / 2, width, height);
+
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+            });
+
+            if (confetti.length > 0) {
+                window.requestAnimationFrame(render);
+            }
+        };
+
+        // 自动添加新的彩带
+        setInterval(() => {
+            confetti.push({
+                color: colors[Math.floor(randomRange(0, colors.length))],
+                dimensions: {
+                    x: randomRange(10, 20),
+                    y: randomRange(10, 30)
+                },
+                position: {
+                    x: randomRange(0, canvas.width),
+                    y: canvas.height - 1
+                },
+                rotation: randomRange(0, 2 * Math.PI),
+                scale: {
+                    x: 1,
+                    y: 1
+                },
+                velocity: {
+                    x: randomRange(-25, 25),
+                    y: randomRange(0, -50)
+                }
+            });
+        }, 100);
+
+        initConfetti();
+        render();
+    </script>
+</body>
+</html>

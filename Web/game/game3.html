@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阵营对抗</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+        .header {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+        .header h1 { color: white; font-size: 24px; }
+        .score-board {
+            display: flex;
+            gap: 30px;
+            color: white;
+            font-size: 16px;
+        }
+        .team-blue { color: #4facfe; }
+        .team-red { color: #ff6b6b; }
+        .game-container {
+            position: relative;
+            margin-top: 20px;
+        }
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            color: white;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .btn-start { background: linear-gradient(45deg, #43e97b, #38f9d7); color: white; }
+        .btn-back { background: linear-gradient(45deg, #f093fb, #f5576c); color: white; }
+        .btn:hover { transform: scale(1.05); }
+        .instructions {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚔️ 阵营对抗</h1>
+        <div class="score-board">
+            <span class="team-blue">蓝队: <span id="blueScore">0</span></span>
+            <span class="team-red">红队: <span id="redScore">0</span></span>
+        </div>
+        <button class="btn btn-back" onclick="location.href='../index.html'">返回</button>
+    </div>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas" width="600" height="500"></canvas>
+    </div>
+    
+    <div class="controls">
+        <button class="btn btn-start" id="startBtn" onclick="startGame()">开始游戏</button>
+        <div class="instructions">
+            玩家1: WASD移动 | F射击 | 玩家2: 方向键移动 | Enter射击 | 先得10分获胜
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameRunning = false;
+        let blueScore = 0;
+        let redScore = 0;
+        const winScore = 10;
+        
+        const player1 = {
+            x: 50,
+            y: 225,
+            width: 40,
+            height: 40,
+            speed: 5,
+            color: '#4facfe',
+            bullets: [],
+            cooldown: 0
+        };
+        
+        const player2 = {
+            x: 510,
+            y: 225,
+            width: 40,
+            height: 40,
+            speed: 5,
+            color: '#ff6b6b',
+            bullets: [],
+            cooldown: 0
+        };
+        
+        const obstacles = [
+            { x: 200, y: 100, width: 30, height: 100 },
+            { x: 370, y: 100, width: 30, height: 100 },
+            { x: 200, y: 300, width: 30, height: 100 },
+            { x: 370, y: 300, width: 30, height: 100 },
+            { x: 285, y: 200, width: 30, height: 100 }
+        ];
+        
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            keys[e.code] = true;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+            keys[e.code] = false;
+        });
+        
+        function shoot(player, direction) {
+            if (player.cooldown > 0) return;
+            
+            player.bullets.push({
+                x: player.x + player.width / 2 - 3,
+                y: player.y + player.height / 2 - 3,
+                width: 6,
+                height: 6,
+                speed: 8,
+                direction: direction
+            });
+            player.cooldown = 15;
+        }
+        
+        function update() {
+            if (!gameRunning) return;
+            
+            // 玩家1移动
+            if ((keys['w'] || keys['W']) && player1.y > 0) {
+                player1.y -= player1.speed;
+            }
+            if ((keys['s'] || keys['S']) && player1.y < canvas.height - player1.height) {
+                player1.y += player1.speed;
+            }
+            if ((keys['a'] || keys['A']) && player1.x > 0) {
+                player1.x -= player1.speed;
+            }
+            if ((keys['d'] || keys['D']) && player1.x < canvas.width / 2 - player1.width) {
+                player1.x += player1.speed;
+            }
+            
+            // 玩家2移动
+            if (keys['ArrowUp'] && player2.y > 0) {
+                player2.y -= player2.speed;
+            }
+            if (keys['ArrowDown'] && player2.y < canvas.height - player2.height) {
+                player2.y += player2.speed;
+            }
+            if (keys['ArrowLeft'] && player2.x > canvas.width / 2) {
+                player2.x -= player2.speed;
+            }
+            if (keys['ArrowRight'] && player2.x < canvas.width - player2.width) {
+                player2.x += player2.speed;
+            }
+            
+            // 射击
+            if (keys['f'] || keys['F']) {
+                shoot(player1, 1);
+            }
+            if (keys['Enter']) {
+                shoot(player2, -1);
+            }
+            
+            // 更新冷却
+            if (player1.cooldown > 0) player1.cooldown--;
+            if (player2.cooldown > 0) player2.cooldown--;
+            
+            // 更新子弹
+            updateBullets(player1.bullets, player2, 1);
+            updateBullets(player2.bullets, player1, -1);
+            
+            // 检查胜利
+            if (blueScore >= winScore || redScore >= winScore) {
+                gameOver();
+            }
+        }
+        
+        function updateBullets(bullets, target, direction) {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                bullet.x += bullet.speed * direction;
+                
+                // 检查是否击中目标
+                if (collision(bullet, target)) {
+                    bullets.splice(i, 1);
+                    if (direction === 1) {
+                        blueScore++;
+                    } else {
+                        redScore++;
+                    }
+                    updateUI();
+                    // 重置位置
+                    resetPositions();
+                    return;
+                }
+                
+                // 检查障碍物
+                for (const obs of obstacles) {
+                    if (collision(bullet, obs)) {
+                        bullets.splice(i, 1);
+                        return;
+                    }
+                }
+                
+                // 移除超出边界的子弹
+                if (bullet.x < 0 || bullet.x > canvas.width) {
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+        
+        function collision(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+        
+        function resetPositions() {
+            player1.x = 50;
+            player1.y = 225;
+            player2.x = 510;
+            player2.y = 225;
+            player1.bullets = [];
+            player2.bullets = [];
+        }
+        
+        function draw() {
+            // 清空画布
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制中场线
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 绘制障碍物
+            ctx.fillStyle = '#4a5568';
+            obstacles.forEach(obs => {
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                // 障碍物阴影
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(obs.x + 5, obs.y + 5, obs.width, obs.height);
+                ctx.fillStyle = '#4a5568';
+            });
+            
+            // 绘制玩家1
+            ctx.fillStyle = player1.color;
+            ctx.fillRect(player1.x, player1.y, player1.width, player1.height);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('P1', player1.x + player1.width / 2, player1.y + player1.height / 2 + 6);
+            
+            // 绘制玩家2
+            ctx.fillStyle = player2.color;
+            ctx.fillRect(player2.x, player2.y, player2.width, player2.height);
+            ctx.fillStyle = 'white';
+            ctx.fillText('P2', player2.x + player2.width / 2, player2.y + player2.height / 2 + 6);
+            
+            // 绘制子弹
+            ctx.fillStyle = '#feca57';
+            player1.bullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x + bullet.width / 2, bullet.y + bullet.height / 2, bullet.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            ctx.fillStyle = '#ff9f43';
+            player2.bullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x + bullet.width / 2, bullet.y + bullet.height / 2, bullet.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // 绘制区域标识
+            ctx.fillStyle = 'rgba(79, 172, 254, 0.2)';
+            ctx.fillRect(0, 0, canvas.width / 2, canvas.height);
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.2)';
+            ctx.fillRect(canvas.width / 2, 0, canvas.width / 2, canvas.height);
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        function startGame() {
+            if (gameRunning) return;
+            
+            gameRunning = true;
+            blueScore = 0;
+            redScore = 0;
+            resetPositions();
+            updateUI();
+            
+            document.getElementById('startBtn').textContent = '游戏中...';
+            gameLoop();
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const winner = blueScore >= winScore ? '蓝队' : '红队';
+            const color = blueScore >= winScore ? '#4facfe' : '#ff6b6b';
+            
+            ctx.fillStyle = color;
+            ctx.font = '30px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🏆 ${winner}获胜！`, canvas.width / 2, canvas.height / 2 - 20);
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Microsoft YaHei';
+            ctx.fillText(`最终比分 - 蓝队: ${blueScore} | 红队: ${redScore}`, canvas.width / 2, canvas.height / 2 + 20);
+            
+            document.getElementById('startBtn').textContent = '重新开始';
+        }
+        
+        function updateUI() {
+            document.getElementById('blueScore').textContent = blueScore;
+            document.getElementById('redScore').textContent = redScore;
+        }
+        
+        // 初始绘制
+        draw();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '24px Microsoft YaHei';
+        ctx.textAlign = 'center';
+        ctx.fillText('点击"开始游戏"按钮开始', canvas.width / 2, canvas.height / 2);
+    </script>
+</body>
+</html>

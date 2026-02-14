@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            width: 450px;
+            max-width: 90%;
+        }
+        .logo {
+            text-align: center;
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .step-indicator {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-back {
+            background: #f0f0f0;
+            color: #666;
+            margin-top: 15px;
+        }
+        .btn-back:hover {
+            background: #e0e0e0;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        .security-icon {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🔐</div>
+        <h1>管理员登录</h1>
+        <p class="subtitle">双重验证，安全第一</p>
+        
+        <div class="security-badge">
+            <span class="security-icon">🛡️</span>
+            <span>系统采用二级密码验证机制</span>
+        </div>
+
+        <div class="step-indicator" id="stepIndicator">第一步：验证密码</div>
+
+        <div id="step1" class="step active">
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="firstPassword" placeholder="请输入密码">
+            </div>
+            <button class="btn btn-primary" onclick="verifyFirstPassword()">下一步</button>
+        </div>
+
+        <div id="step2" class="step">
+            <div class="form-group">
+                <label>二级密码</label>
+                <input type="password" id="secondPassword" placeholder="请输入二级密码">
+            </div>
+            <button class="btn btn-primary" onclick="verifySecondPassword()">进入后台</button>
+        </div>
+
+        <button class="btn btn-back" onclick="location.href='../setting.html'">返回设置</button>
+    </div>
+
+    <script>
+        // 验证第一步密码
+        function verifyFirstPassword() {
+            const password = document.getElementById('firstPassword').value;
+
+            if (!password) {
+                alert('请输入密码');
+                return;
+            }
+
+            if (password === 'ADMINUSER') {
+                // 第一步验证通过
+                document.getElementById('step1').classList.remove('active');
+                document.getElementById('step2').classList.add('active');
+                document.getElementById('stepIndicator').textContent = '第二步：二级密码验证';
+                document.getElementById('secondPassword').focus();
+            } else {
+                alert('密码错误！');
+                document.getElementById('firstPassword').value = '';
+            }
+        }
+
+        // 验证二级密码
+        function verifySecondPassword() {
+            const secondPassword = document.getElementById('secondPassword').value;
+
+            if (!secondPassword) {
+                alert('请输入二级密码');
+                return;
+            }
+
+            if (secondPassword === '20150713@toby') {
+                // 两次验证都通过，进入后台
+                localStorage.setItem('adminLoggedIn', 'true');
+                localStorage.setItem('adminLoginTime', Date.now().toString());
+                location.href = 'admin_backend.html';
+            } else {
+                alert('二级密码错误！');
+                document.getElementById('secondPassword').value = '';
+            }
+        }
+
+        // 检查是否已登录
+        if (localStorage.getItem('adminLoggedIn') === 'true') {
+            const loginTime = parseInt(localStorage.getItem('adminLoginTime') || '0');
+            const now = Date.now();
+            // 2小时后自动登出
+            if (now - loginTime < 7200000) {
+                location.href = 'admin_backend.html';
+            } else {
+                localStorage.removeItem('adminLoggedIn');
+                localStorage.removeItem('adminLoginTime');
+            }
+        }
+
+        // 回车键支持
+        document.getElementById('firstPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyFirstPassword();
+            }
+        });
+
+        document.getElementById('secondPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifySecondPassword();
+            }
+        });
+    </script>
+</body>
+</html>
